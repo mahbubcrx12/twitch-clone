@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:twitch_clone/resourses/auth_methods.dart';
-import 'package:twitch_clone/screen/home_screen.dart';
 
+import 'package:twitch_clone/screen/home_screen.dart';
+import 'package:twitch_clone/widgets/loading_indicator.dart';
+
+import '../resources/auth_methods.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 
@@ -17,13 +19,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthMethods _authMethods = AuthMethods();
+  bool _isLoading = false;
   loginUser()async{
+    setState(() {
+      _isLoading = true;
+    });
     bool res = await _authMethods.loginUser(
         context, _emailController.text, _passwordController.text
     );
+    setState(() {
+      _isLoading = false;
+    });
     if(res){
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -34,7 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text("Login"),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body:_isLoading ? const LoadingIndicator()
+      :SingleChildScrollView(
         child: Padding(padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

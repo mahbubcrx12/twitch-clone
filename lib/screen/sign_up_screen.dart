@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:twitch_clone/resourses/auth_methods.dart';
 import 'package:twitch_clone/screen/home_screen.dart';
 import 'package:twitch_clone/widgets/custom_button.dart';
 import 'package:twitch_clone/widgets/custom_text_field.dart';
+import 'package:twitch_clone/widgets/loading_indicator.dart';
+
+import '../resources/auth_methods.dart';
 
 class SignUpScreen extends StatefulWidget {
   static const String routeName = '/signUp';
@@ -17,18 +19,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _userNameController = TextEditingController();
   final AuthMethods _authMethods = AuthMethods();
+  bool _isLoading = false;
 
   void signUpUser()async {
+    setState(() {
+      _isLoading = true;
+    });
     bool res = await _authMethods.signUpUser(
         context,
         _emailController.text,
         _userNameController.text,
         _passwordController.text
     );
-
+    setState(() {
+      _isLoading = false;
+    });
     if(res){
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
     }
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _emailController.dispose();
+    _userNameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,7 +55,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         title: const Text("Sign Up"),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? LoadingIndicator()
+          :SingleChildScrollView(
         child: Padding(padding: const EdgeInsets.symmetric(horizontal: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
