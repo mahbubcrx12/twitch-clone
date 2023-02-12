@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:twitch_clone/provider/user_provider.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
+import 'package:twitch_clone/resources/firestore_methods.dart';
+import 'package:twitch_clone/screen/home_screen.dart';
 import '../config/appid.dart';
 class BroadcastScreen extends StatefulWidget {
   final bool isBroadcaster;
@@ -19,6 +21,8 @@ class BroadcastScreen extends StatefulWidget {
 class _BroadcastScreenState extends State<BroadcastScreen> {
   late final RtcEngine _engine;
   List<int> remoteUid = [];
+  bool switchCamera = true;
+  bool isMuted = false;
   @override
   void initState() {
     // TODO: implement initState
@@ -70,22 +74,73 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
     );
   }
 
+  void _switchCamera(){
+    _engine.switchCamera().then((value){
+     setState(() {
+       switchCamera = !switchCamera;
+     });
+    }).catchError((err){
+      debugPrint('switchCamera $err');
+    });
+  }
+
+  void onToggleMute() async{
+    setState(() {
+      isMuted = !isMuted;
+    });
+    await _engine.muteLocalAudioStream(isMuted);
+  }
+
+  _leaveChannel() async{
+    await _engine.leaveChannel();
+    if('${Provider.of<UserProvider>(context,listen: false).user.uid}${Provider.of<UserProvider>(context,listen: false).user.username}' == widget.channelId){
+      await FireStoreMethods().endLiveStream(widget.channelId);
+    }else{
+      await FireStoreMethods().updateViewCount(widget.channelId,false);
+    }
+    Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
-    return Scaffold(
-      body: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              _renderVideo(user),
-            ],
-      ),
+    return SafeArea(
+      child: WillPopScope(
+        onWillPop: () async{
+          await _leaveChannel();
+          return Future.value(true);
+        },
+        child: Scaffold(
+          body: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                children: [
+                  _renderVideo(user),
+                  if("${user.uid}${user.username}" == widget.channelId)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: _switchCamera,
+                          child: const Text("Switch Camera"),
+                        ),
+                        InkWell(
+                          onTap: onToggleMute,
+                          child: Text(isMuted ? 'Unmute' : 'Mute'),
+                        )
+                      ],
+                    ),
+
+                ],
+          ),
+          ),
+        ),
       ),
     );
   }
   _renderVideo(user){
-    return AspectRatio(aspectRatio: 16/9,
+    return AspectRatio(aspectRatio: 16/12,
       child: "${user.uid}${user.username}" == widget.channelId ? RtcLocalView.SurfaceView(
         zOrderMediaOverlay: true,
         zOrderOnTop: true,
