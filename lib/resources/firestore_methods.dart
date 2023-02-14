@@ -53,15 +53,18 @@ class FireStoreMethods{
     final user = Provider.of<UserProvider>(context,listen: false);
 
     try{
+
       String commentId = const Uuid().v1();
-      await _firestore.collection('livestream').doc(id).collection('cooments').doc('commentsId').set({
+      await _firestore.collection('livestream').doc(id).collection('comments').doc('commentsId').set({
         'username' : user.user.username,
-        'messege' : text,
+        'message' : text,
         'uid' : user.user.uid,
-        'createAt' : DateTime.now(),
-        'commentId': commentId
+        'createdAt' : DateTime.now(),
+        'commentsId': commentId,
       });
+
     }on FirebaseException catch(e){
+
       showSnackBar(context, e.message!);
     }
   }

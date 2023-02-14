@@ -37,23 +37,30 @@ class _ChatState extends State<Chat> {
               .collection('livestream')
               .doc(widget.channelId)
               .collection('comments')
+              //.doc("commentsId")
               .orderBy('createdAt',descending: true)
+              .limit(50)
               .snapshots(),
               builder: (context,snapshot){
                 if(snapshot.connectionState == ConnectionState.waiting){
                   return const LoadingIndicator();
                 }
+                if(snapshot.data == null){
+                  return Center(child: Text('No data available'));
+                }
                 return ListView.builder(
-                    shrinkWrap: true,
+                  shrinkWrap: true,
                     itemCount:snapshot.data.docs.length,
-                    itemBuilder: (context,index)=> ListTile(
-                      title: Text(snapshot.data.docs[index]['úsername'],style: TextStyle(
+                    itemBuilder: (context,index) => ListTile(
+                      title: Text(snapshot.data.docs[index]['username'],style: TextStyle(
                         color: snapshot.data.docs[index]['uid'] ==
                           userProvider.user.uid
                             ? Colors.blue
                             : Colors.black,
                       ),),
-                      subtitle: Text(snapshot.data.docs[index]['messege']),
+                      subtitle: Text(snapshot.data.docs[index]['message'],style: TextStyle(
+
+                          color: Colors.black),),
                     ),
                 );
               },
@@ -62,7 +69,11 @@ class _ChatState extends State<Chat> {
           CustomTextField(
             controller: _chatController,
           onTap: (val){
-              FireStoreMethods().chat(_chatController.text, widget.channelId, context);
+              FireStoreMethods().chat(
+                  _chatController.text,
+                  widget.channelId,
+                  context
+              );
               setState(() {
                 _chatController.text = "";
               });
